@@ -31,8 +31,8 @@ export function TeamManager({authorizedUsers,onAddUser,onUpdateUser,onDeleteUser
  };
  return (
    <div className="panel settings-panel" style={{maxWidth:700,marginTop:24}}>
-     <h2>Staff & POS Access Whitelist</h2>
-     <p>Only users added to this list (or the store administrators) are permitted to sign in to Poppy Blue POS. Changes sync instantly across all terminals.</p>
+     <h2>Staff & Point Of Sale Access Whitelist</h2>
+     <p>Only users added to this list (or the store administrators) are permitted to sign in to Point Of Sale. Changes sync instantly across all terminals.</p>
      {isAdmin&&<form className="add-member-form" onSubmit={handleAdd}>
        <input type="email" placeholder="staff.member@gmail.com" value={email} onChange={e=>setEmail(e.target.value)} required/>
        <select value={role} onChange={e=>setRole(e.target.value)}>

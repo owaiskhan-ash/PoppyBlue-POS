@@ -576,7 +576,7 @@ function App() {
             <strong>POPPY BLUE</strong>
             <small>F R A G R A N C E S</small>
           </div>
-          <h2>Loading POS</h2>
+          <h2>Loading Point Of Sale</h2>
           <p>Connecting to store workspace...</p>
         </div>
       </div>
@@ -593,7 +593,7 @@ function App() {
             <strong>POPPY BLUE</strong>
             <small>F R A G R A N C E S</small>
           </div>
-          <h2>Staff Portal Login</h2>
+          <h2>Point Of Sale</h2>
           <p>Sign in with your authorized Google account to manage store sales, inventory, and tax invoices.</p>
           <button className="btn-google" onClick={() => signInWithPopup(auth, googleProvider)}>
             <svg viewBox="0 0 24 24">
@@ -625,11 +625,12 @@ function App() {
           <div className="auth-denied">
             <h3><ShieldAlert size={18} /> Access Restricted</h3>
             <p>
-              You are signed in as <strong>{currentUser.email}</strong>, but this account has not been authorized to access the Poppy Blue POS workspace.
+              You are signed in as <strong>{currentUser.email}</strong>, but this account has not been authorized to access the Point Of Sale workspace.
             </p>
             <p style={{ marginBottom: 0 }}>
               Please ask a store administrator (<strong>poppyblueshopify@gmail.com</strong>, <strong>owaiskhan722@gmail.com</strong>, or <strong>ashketchupkeke@gmail.com</strong>) to add your email to the staff whitelist.
             </p>
+
           </div>
           <div className="auth-actions-group">
             <button className="primary" onClick={() => signInWithPopup(auth, googleProvider)}>
