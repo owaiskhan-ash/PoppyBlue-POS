@@ -12,3 +12,76 @@ export function SalesCharts({invoices}){
  const active=invoices.filter(i=>!i.returned),days=Array.from({length:7},(_,index)=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-6+index);const value=active.filter(i=>new Date(i.date).toDateString()===d.toDateString()).reduce((sum,i)=>sum+Number(i.total||0),0);return {key:d.toDateString(),label:d.toLocaleDateString('en-IN',{day:'numeric',month:'short'}),value}}),max=Math.max(...days.map(d=>d.value),1),payments=active.reduce((all,i)=>{all[i.payment||'Other']=(all[i.payment||'Other']||0)+Number(i.total||0);return all},{}),sum=Object.values(payments).reduce((a,b)=>a+b,0);
  return <div className="sales-charts"><div className="panel sales-chart"><h2>Sales over time</h2><p>Last 7 days · net of full returns</p>{active.length?<div className="bars" role="img" aria-label={'Sales in the last seven days: '+days.map(d=>`${d.label} ${money(d.value)}`).join(', ')}>{days.map(d=><div className="bar-column" key={d.key}><span className="bar-value">{money(d.value)}</span><div className="bar-track"><div className="bar-fill" style={{height:`${d.value/max*100}%`}}/></div><small>{d.label}</small></div>)}</div>:<div className="chart-empty">Sales will appear here after your first invoice.</div>}</div><div className="panel sales-chart"><h2>Sales by payment</h2><p>All time · net of full returns</p>{sum>0?Object.entries(payments).sort((a,b)=>b[1]-a[1]).map(([name,value])=><div className="payment-chart-row" key={name}><div><span>{name}</span><strong>{money(value)}</strong></div><div className="payment-track"><div style={{width:`${value/sum*100}%`}}/></div></div>):<div className="chart-empty">No payment data yet.</div>}</div></div>
 }
+
+export function TeamManager({authorizedUsers,onAddUser,onUpdateUser,onDeleteUser,currentUser,isAdmin,adminEmails=['ashketchupkeke@gmail.com','poppyblueshopify@gmail.com','owaiskhan722@gmail.com']}){
+ const [email,setEmail]=useState(''),[role,setRole]=useState('cashier'),[msg,setMsg]=useState('');
+ const handleAdd=async e=>{
+   e.preventDefault();
+   const clean=email.trim().toLowerCase();
+   if(!clean||!clean.includes('@')){setMsg('Enter a valid email address.');return}
+   if(adminEmails.includes(clean)){setMsg('This user is already a permanent administrator.');return}
+   try{
+     await onAddUser({email:clean,role,active:true});
+     setEmail('');
+     setMsg('Authorized user added.');
+     setTimeout(()=>setMsg(''),3000);
+   }catch(err){
+     setMsg(err.message||'Failed to add user');
+   }
+ };
+ return (
+   <div className="panel settings-panel" style={{maxWidth:700,marginTop:24}}>
+     <h2>Staff & POS Access Whitelist</h2>
+     <p>Only users added to this list (or the store administrators) are permitted to sign in to Poppy Blue POS. Changes sync instantly across all terminals.</p>
+     {isAdmin&&<form className="add-member-form" onSubmit={handleAdd}>
+       <input type="email" placeholder="staff.member@gmail.com" value={email} onChange={e=>setEmail(e.target.value)} required/>
+       <select value={role} onChange={e=>setRole(e.target.value)}>
+         <option value="cashier">Cashier</option>
+         <option value="admin">Admin</option>
+       </select>
+       <button className="primary" type="submit">Authorize Staff</button>
+     </form>}
+     {msg&&<p style={{color:msg.includes('added')?'#2e7d32':'#c62828',fontSize:12,marginTop:8}}>{msg}</p>}
+     <div className="table-wrap">
+       <table className="team-table">
+         <thead>
+           <tr><th>EMAIL</th><th>ROLE</th><th>STATUS</th>{isAdmin&&<th>ACTIONS</th>}</tr>
+         </thead>
+         <tbody>
+           {adminEmails.map(adminEmail=>(
+             <tr key={adminEmail}>
+               <td><strong>{adminEmail}</strong><small style={{display:'block',color:'#8898aa'}}>Designated Store Administrator</small></td>
+               <td><span className="badge-role admin">ADMIN</span></td>
+               <td><span className="badge-active"><i style={{width:6,height:6,borderRadius:'50%',background:'#2e7d32',display:'inline-block'}}/> Active</span></td>
+               {isAdmin&&<td><small style={{color:'#8898aa'}}>Permanent</small></td>}
+             </tr>
+           ))}
+           {authorizedUsers.filter(u=>!adminEmails.includes(u.email?.toLowerCase())).map(u=>(
+             <tr key={u.email}>
+               <td><strong>{u.email}</strong>{u.addedBy&&<small style={{display:'block',color:'#8898aa'}}>Added by {u.addedBy}</small>}</td>
+               <td><span className={`badge-role ${u.role}`}>{u.role}</span></td>
+               <td>
+                 <span className={`badge-active ${u.active?'':'inactive'}`}>
+                   <i style={{width:6,height:6,borderRadius:'50%',background:u.active?'#2e7d32':'#9e9e9e',display:'inline-block'}}/>
+                   {u.active?'Active':'Suspended'}
+                 </span>
+               </td>
+               {isAdmin&&(
+                 <td style={{display:'flex',gap:6}}>
+                   <button type="button" style={{padding:'4px 8px',fontSize:11,borderRadius:4,border:'1px solid #d4dde8',background:'#fff'}} onClick={()=>onUpdateUser(u.email,{active:!u.active})}>
+                     {u.active?'Suspend':'Activate'}
+                   </button>
+                   <button type="button" style={{padding:'4px 8px',fontSize:11,borderRadius:4,border:'1px solid #f6cfc9',background:'#fff',color:'#c62828'}} onClick={()=>{if(window.confirm(`Revoke access for ${u.email}?`))onDeleteUser(u.email)}}>
+                     Revoke
+                   </button>
+                 </td>
+               )}
+             </tr>
+           ))}
+         </tbody>
+       </table>
+     </div>
+   </div>
+ );
+}
+

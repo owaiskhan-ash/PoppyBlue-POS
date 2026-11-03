@@ -1,0 +1,211 @@
+{
+  "entities": {
+    "AuthorizedUser": {
+      "title": "AuthorizedUser",
+      "description": "User authorized to access the Poppy Blue POS application",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "Email address of the authorized staff member"
+        },
+        "role": {
+          "type": "string",
+          "description": "Role of the user: admin or cashier",
+          "enum": ["admin", "cashier"]
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Whether the user account is active"
+        },
+        "addedAt": {
+          "type": "string",
+          "description": "ISO date string when user was added"
+        },
+        "addedBy": {
+          "type": "string",
+          "description": "Email of user who added this authorization"
+        }
+      },
+      "required": ["email", "role", "active"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Point of sale completed invoice transaction",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique invoice identifier"
+        },
+        "date": {
+          "type": "string",
+          "description": "ISO date string of the invoice"
+        },
+        "total": {
+          "type": "number",
+          "description": "Total amount payable"
+        },
+        "base": {
+          "type": "number",
+          "description": "Taxable base value"
+        },
+        "tax": {
+          "type": "number",
+          "description": "Total GST tax amount"
+        },
+        "gross": {
+          "type": "number",
+          "description": "Gross items total before discount"
+        },
+        "discount": {
+          "type": "number",
+          "description": "Discount amount in INR"
+        },
+        "payment": {
+          "type": "string",
+          "description": "Payment method: Cash, UPI, Card"
+        },
+        "customer": {
+          "type": "string",
+          "description": "Customer name"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Customer phone number"
+        },
+        "customerGstin": {
+          "type": "string",
+          "description": "Customer GSTIN"
+        },
+        "returned": {
+          "type": "boolean",
+          "description": "Whether invoice is fully returned"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        }
+      },
+      "required": ["id", "date", "total", "payment"]
+    },
+    "ProductStock": {
+      "title": "ProductStock",
+      "description": "Stock count and low threshold for a product variant",
+      "type": "object",
+      "properties": {
+        "qty": {
+          "type": "string",
+          "description": "Stock quantity available"
+        },
+        "low": {
+          "type": "string",
+          "description": "Low stock alert threshold"
+        },
+        "assumed": {
+          "type": "boolean",
+          "description": "Whether count was auto-assumed upon product import"
+        }
+      },
+      "required": []
+    },
+    "ProductTax": {
+      "title": "ProductTax",
+      "description": "GST rate and HSN override for a product variant",
+      "type": "object",
+      "properties": {
+        "gst": {
+          "type": "string",
+          "description": "GST percentage override"
+        },
+        "hsn": {
+          "type": "string",
+          "description": "HSN code override"
+        }
+      },
+      "required": []
+    },
+    "CustomerProfile": {
+      "title": "CustomerProfile",
+      "description": "Customer profile with contact details and demographics",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique customer identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Customer full name"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Customer phone number"
+        },
+        "age": {
+          "type": "string",
+          "description": "Customer age"
+        },
+        "location": {
+          "type": "string",
+          "description": "Customer location or address"
+        },
+        "birthday": {
+          "type": "string",
+          "description": "Customer birthday date string"
+        }
+      },
+      "required": ["id"]
+    },
+    "StoreSettings": {
+      "title": "StoreSettings",
+      "description": "Store tax and invoicing configurations",
+      "type": "object",
+      "properties": {
+        "gstin": {
+          "type": "string",
+          "description": "Store GSTIN identifier"
+        },
+        "gst": {
+          "type": "string",
+          "description": "Default GST percentage"
+        },
+        "hsn": {
+          "type": "string",
+          "description": "Default HSN code"
+        },
+        "taxType": {
+          "type": "string",
+          "description": "Tax classification: CGST + SGST or IGST"
+        }
+      },
+      "required": ["gstin"]
+    }
+  },
+  "firestore": {
+    "/authorized_users/{userEmail}": {
+      "schema": { "$ref": "#/entities/AuthorizedUser" },
+      "description": "Whitelist of users permitted to authenticate and access the POS"
+    },
+    "/invoices/{invoiceId}": {
+      "schema": { "$ref": "#/entities/Invoice" },
+      "description": "Completed point of sale invoices and receipts"
+    },
+    "/stock/{variantId}": {
+      "schema": { "$ref": "#/entities/ProductStock" },
+      "description": "Variant-level inventory stock counts"
+    },
+    "/product_tax/{variantId}": {
+      "schema": { "$ref": "#/entities/ProductTax" },
+      "description": "Variant-level GST and HSN overrides"
+    },
+    "/customers/{customerId}": {
+      "schema": { "$ref": "#/entities/CustomerProfile" },
+      "description": "Customer records and contact info"
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/StoreSettings" },
+      "description": "Store global configuration settings"
+    }
+  }
+}

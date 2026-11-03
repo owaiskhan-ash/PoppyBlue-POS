@@ -1,0 +1,112 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Connection validation endpoint
+    match /test/connection {
+      allow get: if true;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && (request.auth.token.email_verified == true || request.auth.token.firebase.sign_in_provider == 'google.com');
+    }
+
+    function currentUserEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    function isSuperAdmin() {
+      return isVerified() && (
+        currentUserEmail() == 'ashketchupkeke@gmail.com' ||
+        currentUserEmail() == 'poppyblueshopify@gmail.com' ||
+        currentUserEmail() == 'owaiskhan722@gmail.com'
+      );
+    }
+
+    function isAdmin() {
+      return isSuperAdmin() || (
+        isVerified() &&
+        exists(/databases/$(database)/documents/authorized_users/$(currentUserEmail())) &&
+        get(/databases/$(database)/documents/authorized_users/$(currentUserEmail())).data.role == 'admin' &&
+        get(/databases/$(database)/documents/authorized_users/$(currentUserEmail())).data.active == true
+      );
+    }
+
+    function isAuthorized() {
+      return isAdmin() || (
+        isVerified() &&
+        exists(/databases/$(database)/documents/authorized_users/$(currentUserEmail())) &&
+        get(/databases/$(database)/documents/authorized_users/$(currentUserEmail())).data.active == true
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\.:@]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    // Staff access whitelist
+    match /authorized_users/{userEmail} {
+      allow get, list: if isSignedIn();
+      allow create, update: if isAdmin() && isValidId(userEmail) &&
+        incoming().email is string &&
+        incoming().role in ['admin', 'cashier'] &&
+        incoming().active is bool;
+      allow delete: if isAdmin() && isValidId(userEmail) && !(userEmail in ['ashketchupkeke@gmail.com', 'poppyblueshopify@gmail.com', 'owaiskhan722@gmail.com']);
+    }
+
+    // Invoices - immutable creation, controlled return/edit updates, no direct deletions
+    match /invoices/{invoiceId} {
+      allow get, list: if isAuthorized();
+      allow create: if isAuthorized() && isValidId(invoiceId) &&
+        incoming().id is string && incoming().id.size() <= 64 &&
+        incoming().date is string && incoming().date.size() <= 64 &&
+        incoming().total is number && incoming().total >= 0 &&
+        incoming().payment in ['Cash', 'UPI', 'Card', 'Other'];
+      allow update: if isAuthorized() && isValidId(invoiceId) &&
+        incoming().total is number && incoming().total >= 0;
+      allow delete: if false;
+    }
+
+    // Stock management
+    match /stock/{variantId} {
+      allow get, list: if isAuthorized();
+      allow create, update: if isAuthorized() && isValidId(variantId);
+      allow delete: if isAdmin() && isValidId(variantId);
+    }
+
+    // Product tax & HSN overrides
+    match /product_tax/{variantId} {
+      allow get, list: if isAuthorized();
+      allow create, update: if isAuthorized() && isValidId(variantId);
+      allow delete: if isAdmin() && isValidId(variantId);
+    }
+
+    // Customer records
+    match /customers/{customerId} {
+      allow get, list: if isAuthorized();
+      allow create, update: if isAuthorized() && isValidId(customerId) &&
+        incoming().id is string && incoming().id.size() <= 128;
+      allow delete: if isAdmin() && isValidId(customerId);
+    }
+
+    // Store settings
+    match /settings/{settingId} {
+      allow get, list: if isAuthorized();
+      allow create, update: if isAuthorized() && isValidId(settingId);
+      allow delete: if false;
+    }
+  }
+}
